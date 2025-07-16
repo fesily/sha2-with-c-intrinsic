@@ -35,7 +35,7 @@ _INLINE_ int test_sha256_impl(IN const sha_impl_t impl,
   return SUCCESS;
 }
 
-_INLINE_ int test_sha256()
+_INLINE_ int test_sha256(void)
 {
   uint8_t ref_dgst[SHA256_HASH_BYTE_LEN]     = {0};
   uint8_t data[SHA256_TEST_MAX_MSG_BYTE_LEN] = {0};
@@ -109,7 +109,7 @@ _INLINE_ int test_sha512_impl(IN const sha_impl_t impl,
   return SUCCESS;
 }
 
-_INLINE_ int test_sha512()
+_INLINE_ int test_sha512(void)
 {
   uint8_t ref_dgst[SHA512_HASH_BYTE_LEN]     = {0};
   uint8_t data[SHA512_TEST_MAX_MSG_BYTE_LEN] = {0};

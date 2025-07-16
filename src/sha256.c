@@ -1,10 +1,9 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-#include <assert.h>
-
 #include "sha256_defs.h"
-
+#include <assert.h>
+#include <malloc.h>
 #define LAST_BLOCK_BYTE_LEN (2 * SHA256_BLOCK_BYTE_LEN)
 
 typedef struct sha256_hash_s {
@@ -30,8 +29,8 @@ _INLINE_ void sha256_init(OUT sha256_ctx_t *ctx)
 }
 
 _INLINE_ void sha256_compress(IN OUT sha256_ctx_t *ctx,
-                              IN const uint8_t *data,
-                              IN const size_t   blocks_num)
+                              IN const uint8_t    *data,
+                              IN const size_t      blocks_num)
 {
   assert((ctx != NULL) && (data != NULL));
 
@@ -102,8 +101,8 @@ _INLINE_ void sha256_compress(IN OUT sha256_ctx_t *ctx,
 }
 
 _INLINE_ void sha256_update(IN OUT sha256_ctx_t *ctx,
-                            IN const uint8_t *data,
-                            IN size_t         byte_len)
+                            IN const uint8_t    *data,
+                            IN size_t            byte_len)
 {
   // On exiting this function ctx->rem < SHA256_BLOCK_BYTE_LEN
 
@@ -187,8 +186,8 @@ _INLINE_ void sha256_final(OUT uint8_t *dgst, IN OUT sha256_ctx_t *ctx)
   secure_clean(ctx, sizeof(*ctx));
 }
 
-void sha256(OUT uint8_t *dgst,
-            IN const uint8_t *  data,
+void sha256(OUT uint8_t        *dgst,
+            IN const uint8_t   *data,
             IN const size_t     byte_len,
             IN const sha_impl_t impl)
 {
@@ -199,4 +198,66 @@ void sha256(OUT uint8_t *dgst,
   sha256_init(&ctx);
   sha256_update(&ctx, data, byte_len);
   sha256_final(dgst, &ctx);
+}
+
+void mysha256(OUT uint8_t *dgst, IN const uint8_t *data, IN const size_t byte_len)
+{
+  assert((data != NULL) || (dgst != NULL));
+
+  sha256_ctx_t ctx = {0};
+  ctx.impl         = GENERIC_IMPL; // Use generic implementation
+  sha256_init(&ctx);
+  sha256_update(&ctx, data, byte_len);
+  sha256_final(dgst, &ctx);
+}
+#include <stdlib.h>
+#include <time.h>
+#define TIME_LIMIT 9999
+char *get_random(char *buf, size_t length)
+{
+  const char characters[] =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  for(size_t i = 0; i < length; i++) {
+    const size_t randomIndex = rand() % (sizeof(characters) - 1);
+    buf[i]                   = characters[randomIndex];
+  }
+  buf[length] = '\0';
+  return buf;
+}
+
+char Proof(OUT char         *rand,
+           IN const uint8_t *data,
+           IN const size_t   byte_len,
+           int               hard)
+{
+#define RAND_MAX_LEN 6
+  time_t started = time(NULL);
+  char  *buf     = malloc(byte_len + RAND_MAX_LEN + 1);
+  memcpy(buf, data, byte_len);
+  char  fastpath   = hard % 2 == 0;
+  char  leftoffset = hard / 2;
+  char *hardbuf;
+  if(hard > 1) {
+    hardbuf = malloc(leftoffset);
+    memset(hardbuf, 0, leftoffset);
+  }
+
+  uint8_t dgst[SHA256_HASH_BYTE_LEN];
+  while(1) {
+    if(time(NULL) - started > TIME_LIMIT) {
+      return 1;
+    }
+    get_random(buf + byte_len, RAND_MAX_LEN);
+    mysha256(dgst, (const uint8_t *)buf, byte_len + RAND_MAX_LEN);
+    if(hardbuf && memcmp(dgst, hardbuf, leftoffset) != 0) {
+      continue;
+    }
+    if(!fastpath) {
+      if((dgst[leftoffset] & 0xf0) != 0) continue;
+    }
+
+    memcpy(rand, buf + byte_len, RAND_MAX_LEN);
+    rand[RAND_MAX_LEN] = 0;
+    return 0;
+  }
 }

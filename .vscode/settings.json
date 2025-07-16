@@ -1,0 +1,12 @@
+{
+    "files.associations": {
+        "sha256_defs.h": "c",
+        "avx_defs.h": "c",
+        "defs.h": "c",
+        "immintrin.h": "c",
+        "sha.h": "c",
+        "avx2_defs.h": "c",
+        "avx512vlbwintrin.h": "c",
+        "emscripten.h": "c"
+    }
+}
