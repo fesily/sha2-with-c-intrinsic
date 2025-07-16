@@ -212,7 +212,7 @@ void mysha256(OUT uint8_t *dgst, IN const uint8_t *data, IN const size_t byte_le
 }
 #include <stdlib.h>
 #include <time.h>
-#define TIME_LIMIT 9999
+#define TIME_LIMIT 59
 char *get_random(char *buf, size_t length)
 {
   const char characters[] =
@@ -232,11 +232,14 @@ char Proof(OUT char         *rand,
 {
 #define RAND_MAX_LEN 6
   time_t started = time(NULL);
+  struct timespec ts;
+  timespec_get(&ts, TIME_UTC);
+  srand(ts.tv_nsec + ts.tv_sec);
   char  *buf     = malloc(byte_len + RAND_MAX_LEN + 1);
   memcpy(buf, data, byte_len);
   char  fastpath   = hard % 2 == 0;
-  char  leftoffset = hard / 2;
-  char *hardbuf;
+  int  leftoffset = hard / 2;
+  char *hardbuf = NULL;
   if(hard > 1) {
     hardbuf = malloc(leftoffset);
     memset(hardbuf, 0, leftoffset);
